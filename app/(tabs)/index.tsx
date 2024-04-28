@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useReducer } from "react";
 import {
   StyleSheet,
   TextInput,
@@ -17,27 +17,61 @@ interface Todo {
   id: string;
 }
 
+interface State {
+  todos: Todo[];
+  textInput: string;
+}
+
+type Action =
+  | { type: "ADD_TODO"; text: string }
+  | { type: "REMOVE_TODO"; key: string }
+  | { type: "UPDATE_TEXT_INPUT"; value: string };
+
+const initialState = {
+  todos: [] as Todo[],
+  textInput: "",
+};
+
+const reducer = (state: State, action: Action) => {
+  switch (action.type) {
+    case "ADD_TODO":
+      return {
+        ...state,
+        todos: [
+          { item: action.text, id: Math.random().toString() },
+          ...state.todos,
+        ],
+      };
+    case "REMOVE_TODO":
+      return {
+        ...state,
+        todos: state.todos.filter((item) => item.id !== action.key),
+      };
+    case "UPDATE_TEXT_INPUT":
+      return {
+        ...state,
+        textInput: action.value,
+      };
+    default:
+      return state;
+  }
+};
+
 export default function App() {
-  const [todos, setTodos] = useState<Todo[]>([]);
-  const [textInput, setTextInput] = useState<string>("");
+  const [state, dispatch] = useReducer(reducer, initialState);
+
   const pressHandler = (key: string) => {
-    setTodos((prevTodos) => {
-      return prevTodos.filter((item) => item.id != key);
-    });
+    dispatch({ type: "REMOVE_TODO", key });
   };
 
   const updateHandler = (key: string, value: string) => {
-    setTextInput(value);
-    setTodos((prevTodos) => {
-      return prevTodos.filter((item) => item.id != key);
-    });
+    dispatch({ type: "UPDATE_TEXT_INPUT", value });
+    dispatch({ type: "REMOVE_TODO", key });
   };
 
   const addTodo = (text: string) => {
     if (text.length > 2) {
-      setTodos((prevTodos) => {
-        return [{ item: text, id: Math.random().toString() }, ...prevTodos];
-      });
+      dispatch({ type: "ADD_TODO", text });
     } else {
       Alert.alert("Empty todo", "There must be some text", [
         { text: "Okey", onPress: () => console.log("Alert dismissed") },
@@ -55,10 +89,10 @@ export default function App() {
         <Header />
 
         <View style={styles.content}>
-          <AddTodo add={addTodo} textInput={textInput} />
+          <AddTodo add={addTodo} textInput={state.textInput} />
           <View style={styles.list}>
             <FlatList
-              data={todos}
+              data={state.todos}
               keyExtractor={(item) => item.id}
               renderItem={({ item }) => (
                 <TodoItem
