@@ -1,15 +1,39 @@
 import { StyleSheet, Text, TextInput, View, Button } from "react-native";
-import React, { useState } from "react";
+import React, { useReducer } from "react";
 
 interface AddTodoProps {
   add: (text: string) => void;
   textInput: string;
 }
 
+interface State {
+  text: string;
+}
+
+type Action = { type: "UPDATE_TEXT"; payload: string } | { type: "RESET_TEXT" };
+
+const initialState: State = {
+  text: "",
+};
+
+// Define the reducer function with types
+const reducer = (state: State, action: Action): State => {
+  switch (action.type) {
+    case "UPDATE_TEXT":
+      return { ...state, text: action.payload };
+    case "RESET_TEXT":
+      return { ...state, text: "" };
+    default:
+      return state;
+  }
+};
+
 const AddTodo: React.FC<AddTodoProps> = ({ add, textInput }) => {
-  const [text, setText] = useState<string>(textInput);
+  // Use useReducer instead of useState with types
+  const [state, dispatch] = useReducer(reducer, { text: textInput });
+
   const changeHandler = (val: string) => {
-    setText(val);
+    dispatch({ type: "UPDATE_TEXT", payload: val });
   };
 
   return (
@@ -19,9 +43,16 @@ const AddTodo: React.FC<AddTodoProps> = ({ add, textInput }) => {
         multiline
         placeholder="new todo..."
         onChangeText={changeHandler}
-        value={text}
+        value={state.text}
       />
-      <Button title="Add todo" color="coral" onPress={() => add(text)} />
+      <Button
+        title="Add todo"
+        color="coral"
+        onPress={() => {
+          add(state.text);
+          dispatch({ type: "RESET_TEXT" }); // Reset text after adding
+        }}
+      />
     </View>
   );
 };
